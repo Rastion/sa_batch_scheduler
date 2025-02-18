@@ -1,30 +1,31 @@
 {
-    "entry_point": "simulated_annealing_batch:SimulatedAnnealingBatchScheduler",
+    "entry_point": "sa_batch_optimizer:SABatchOptimizer",
     "default_params": {
-        "initial_temp": 10000,
+        "initial_temperature": 1000,
+        "final_temperature": 1,
         "cooling_rate": 0.95,
-        "iterations_per_temp": 100,
-        "max_idle_shift": 15
+        "iterations_per_temp": 100
     },
-    "optimizer_type": "SimulatedAnnealing",
-    "description": "Simulated Annealing optimizer for batch scheduling problems. Features intelligent perturbation operators that maintain solution feasibility while exploring the search space.",
+    "optimizer_type": "Metaheuristic",
+    "description": "Simulated Annealing based batch scheduling optimizer that uses ordering and batching heuristics to generate competitive solutions.",
     "compatible_problems": ["BatchScheduling"],
     "parameters": {
-        "initial_temp": {
+        "initial_temperature": {
             "type": "float",
-            "description": "Initial temperature for annealing process"
+            "description": "Starting temperature for the simulated annealing process."
+        },
+        "final_temperature": {
+            "type": "float",
+            "description": "Ending temperature for the simulated annealing process."
         },
         "cooling_rate": {
             "type": "float",
-            "description": "Temperature reduction multiplier per iteration"
+            "description": "Cooling rate (multiplier) applied to the temperature at each iteration."
         },
         "iterations_per_temp": {
             "type": "int",
-            "description": "Number of iterations at each temperature level"
-        },
-        "max_idle_shift": {
-            "type": "int",
-            "description": "Maximum allowed time shift for batch movement (minutes)"
+            "description": "Number of iterations to perform at each temperature level."
         }
-    }
+    },
+    "requirements": ["random", "math", "collections", "qubots"]
 }
