@@ -9,13 +9,13 @@ class SABatchOptimizer(BaseOptimizer):
 
     Representation:
       - For each resource, a list (ordering) of tasks assigned to that resource.
-      - A greedy “batching” procedure groups consecutive tasks with the same type (up to the resource’s capacity)
-        to compute start/finish times and the makespan.
+      - A greedy batching procedure (in construct_batch_schedule) groups tasks with the same type,
+        up to the resource’s capacity, and assigns start/finish times.
+    
     Evaluation:
-      - For each resource, tasks are scheduled in batches.
-      - Batch start time is the maximum of the finish time of the previous batch and the finish times of any predecessors.
-      - Batch duration is the maximum duration of tasks in the batch.
-      - The objective is the overall makespan plus a penalty for any precedence violations.
+      - The candidate schedule is built from the ordering and then evaluated using the
+        problem's own evaluate_solution method.
+    
     Neighborhood Moves:
       - For a randomly chosen resource, either swap two tasks or reinsert a task at a new position.
     """
@@ -27,7 +27,7 @@ class SABatchOptimizer(BaseOptimizer):
         self.iterations_per_temp = iterations_per_temp
 
     def optimize(self, problem, initial_solution=None, **kwargs):
-        # Create an initial solution: for each resource, list its tasks in a random order.
+        # Create an initial ordering solution: for each resource, list its tasks in a random order.
         resources = set(problem.resources)
         current_solution = {r: [] for r in resources}
         for t in range(problem.nb_tasks):
@@ -56,64 +56,19 @@ class SABatchOptimizer(BaseOptimizer):
                         best_obj = current_obj
             T *= self.cooling_rate
         
+        # Build the final schedule from the best ordering found.
         batch_schedule = self.construct_batch_schedule(best_solution, problem)
         return {'batch_schedule': batch_schedule}, best_obj
 
-    def evaluate_solution(self, solution, problem):
+    def evaluate_solution(self, ordering_solution, problem):
         """
-        Given a solution (ordering per resource), compute the schedule and objective value.
-        The schedule is built by grouping tasks into batches.
-        Returns a tuple (objective_value, finish_times) where finish_times is a dict mapping
-        task indices to their computed finish time.
+        Build the candidate schedule from the ordering and evaluate it using the problem's method.
+        The candidate solution is a dictionary with key "batch_schedule".
+        Returns a tuple (objective_value, None). The second element is not used.
         """
-        finish_times = {}
-        makespan = 0
-        penalty = 0
-
-        # Compute predecessors from successors.
-        # For each task t, predecessors[t] is a list of tasks that must finish before t starts.
-        predecessors = [[] for _ in range(problem.nb_tasks)]
-        for t in range(problem.nb_tasks):
-            for s in problem.successors[t]:
-                predecessors[s].append(t)
-
-        # Process each resource separately.
-        for r, task_list in solution.items():
-            current_time = 0
-            i = 0
-            while i < len(task_list):
-                # Form a batch starting with the current task.
-                batch_type = problem.types[task_list[i]]
-                batch = []
-                # Group consecutive tasks with the same type, up to capacity.
-                while i < len(task_list) and len(batch) < problem.capacity[r] and \
-                      problem.types[task_list[i]] == batch_type:
-                    batch.append(task_list[i])
-                    i += 1
-                # Determine the earliest start time: at least current_time and no earlier than the finish times of any predecessors.
-                batch_start = current_time
-                for t in batch:
-                    for p in predecessors[t]:
-                        if p in finish_times:
-                            batch_start = max(batch_start, finish_times[p])
-                        else:
-                            # If a predecessor hasn’t been scheduled yet, add a penalty.
-                            penalty += 1000
-                # Batch duration is the maximum duration among tasks in the batch.
-                batch_duration = max(problem.duration[t] for t in batch)
-                batch_finish = batch_start + batch_duration
-                # Update finish times for tasks in this batch.
-                for t in batch:
-                    finish_times[t] = batch_finish
-                current_time = batch_finish
-                makespan = max(makespan, current_time)
-        
-        # Additional precedence check: ensure that for each task, all successors start after it finishes.
-        for t in range(problem.nb_tasks):
-            for s in problem.successors[t]:
-                if finish_times.get(t, 0) > finish_times.get(s, 0):
-                    penalty += 1000
-        return makespan + penalty, finish_times
+        schedule = self.construct_batch_schedule(ordering_solution, problem)
+        obj_value = problem.evaluate_solution({"batch_schedule": schedule})
+        return obj_value, None
 
     def neighbor_solution(self, solution, problem):
         """
@@ -149,6 +104,8 @@ class SABatchOptimizer(BaseOptimizer):
             'tasks': list of task indices in the batch,
             'start': batch start time,
             'end': batch finish time.
+        The batching procedure groups consecutive tasks (with the same type) on a resource,
+        up to the resource capacity.
         """
         batch_schedule = []
         for r, task_list in solution.items():
@@ -162,7 +119,7 @@ class SABatchOptimizer(BaseOptimizer):
                       problem.types[task_list[i]] == batch_type:
                     batch.append(task_list[i])
                     i += 1
-                # For simplicity, we schedule the batch at the current_time.
+                # Schedule the batch starting at current_time.
                 batch_start = current_time
                 batch_duration = max(problem.duration[t] for t in batch) if batch else 0
                 batch_finish = batch_start + batch_duration
