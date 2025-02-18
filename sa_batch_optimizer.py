@@ -1,27 +1,25 @@
-import random, math
+import random
+import math
 from collections import defaultdict
 from qubots.base_optimizer import BaseOptimizer
 
 class SABatchOptimizer(BaseOptimizer):
     """
     Simulated Annealing optimizer for the batch scheduling problem.
-    
+
     Representation:
       - For each resource, a list (ordering) of tasks assigned to that resource.
-      - A greedy batching procedure groups consecutive tasks (with identical types)
-        into batches up to the resource capacity.
-    
+      - A greedy “batching” procedure groups consecutive tasks with the same type (up to the resource’s capacity)
+        to compute start/finish times and the makespan.
     Evaluation:
       - For each resource, tasks are scheduled in batches.
-      - Batch start time is the maximum of the finish time of the previous batch 
-        and the finish times of any predecessors.
-      - Batch duration is the maximum duration of tasks in that batch.
-      - The objective is the overall makespan plus a large penalty for any precedence violations.
-    
+      - Batch start time is the maximum of the finish time of the previous batch and the finish times of any predecessors.
+      - Batch duration is the maximum duration of tasks in the batch.
+      - The objective is the overall makespan plus a penalty for any precedence violations.
     Neighborhood Moves:
       - For a randomly chosen resource, either swap two tasks or reinsert a task at a new position.
     """
-    
+
     def __init__(self, initial_temperature=1000, final_temperature=1, cooling_rate=0.95, iterations_per_temp=100):
         self.initial_temperature = initial_temperature
         self.final_temperature = final_temperature
@@ -71,7 +69,14 @@ class SABatchOptimizer(BaseOptimizer):
         finish_times = {}
         makespan = 0
         penalty = 0
-        
+
+        # Compute predecessors from successors.
+        # For each task t, predecessors[t] is a list of tasks that must finish before t starts.
+        predecessors = [[] for _ in range(problem.nb_tasks)]
+        for t in range(problem.nb_tasks):
+            for s in problem.successors[t]:
+                predecessors[s].append(t)
+
         # Process each resource separately.
         for r, task_list in solution.items():
             current_time = 0
@@ -81,18 +86,18 @@ class SABatchOptimizer(BaseOptimizer):
                 batch_type = problem.types[task_list[i]]
                 batch = []
                 # Group consecutive tasks with the same type, up to capacity.
-                while i < len(task_list) and len(batch) < problem.capacity[r] and problem.types[task_list[i]] == batch_type:
+                while i < len(task_list) and len(batch) < problem.capacity[r] and \
+                      problem.types[task_list[i]] == batch_type:
                     batch.append(task_list[i])
                     i += 1
-                # Determine the earliest start time: it must be at least the current_time and
-                # also no earlier than the finish times of any predecessors.
+                # Determine the earliest start time: at least current_time and no earlier than the finish times of any predecessors.
                 batch_start = current_time
                 for t in batch:
-                    for p in problem.predecessors[t]:
+                    for p in predecessors[t]:
                         if p in finish_times:
                             batch_start = max(batch_start, finish_times[p])
                         else:
-                            # If a predecessor hasn’t been scheduled, penalize heavily.
+                            # If a predecessor hasn’t been scheduled yet, add a penalty.
                             penalty += 1000
                 # Batch duration is the maximum duration among tasks in the batch.
                 batch_duration = max(problem.duration[t] for t in batch)
@@ -103,10 +108,10 @@ class SABatchOptimizer(BaseOptimizer):
                 current_time = batch_finish
                 makespan = max(makespan, current_time)
         
-        # Add a penalty for any precedence violation (if a task finishes before any predecessor).
+        # Additional precedence check: ensure that for each task, all successors start after it finishes.
         for t in range(problem.nb_tasks):
-            for p in problem.predecessors[t]:
-                if finish_times.get(p, 0) > finish_times.get(t, 0):
+            for s in problem.successors[t]:
+                if finish_times.get(t, 0) > finish_times.get(s, 0):
                     penalty += 1000
         return makespan + penalty, finish_times
 
@@ -153,12 +158,12 @@ class SABatchOptimizer(BaseOptimizer):
                 batch_type = problem.types[task_list[i]]
                 batch = []
                 # Group tasks into a batch (same type, up to capacity).
-                while i < len(task_list) and len(batch) < problem.capacity[r] and problem.types[task_list[i]] == batch_type:
+                while i < len(task_list) and len(batch) < problem.capacity[r] and \
+                      problem.types[task_list[i]] == batch_type:
                     batch.append(task_list[i])
                     i += 1
-                # Determine batch start (for simplicity, use current_time).
+                # For simplicity, we schedule the batch at the current_time.
                 batch_start = current_time
-                # (A more detailed schedule could adjust batch_start based on predecessors.)
                 batch_duration = max(problem.duration[t] for t in batch) if batch else 0
                 batch_finish = batch_start + batch_duration
                 batch_schedule.append({
