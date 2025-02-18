@@ -49,7 +49,7 @@ class SimulatedAnnealingBatchScheduler(BaseOptimizer):
                 # Generate neighbor
                 neighbor_sol = self._generate_neighbor(problem, current_sol)
                 neighbor_cost = problem.evaluate_solution(neighbor_sol)
-                
+                print(neighbor_sol, neighbor_cost)
                 # Acceptance probability
                 delta = neighbor_cost - current_cost
                 if delta < 0 or random.random() < math.exp(-delta / temp):
