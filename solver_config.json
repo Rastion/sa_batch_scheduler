@@ -4,7 +4,7 @@
         "initial_temperature": 1000,
         "final_temperature": 1,
         "cooling_rate": 0.95,
-        "iterations_per_temp": 100
+        "iterations_per_temp": 10000
     },
     "optimizer_type": "Metaheuristic",
     "description": "Simulated Annealing based batch scheduling optimizer that uses ordering and batching heuristics to generate competitive solutions.",
