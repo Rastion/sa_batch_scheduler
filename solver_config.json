@@ -1,0 +1,30 @@
+{
+    "entry_point": "simulated_annealing_batch:SimulatedAnnealingBatchScheduler",
+    "default_params": {
+        "initial_temp": 10000,
+        "cooling_rate": 0.95,
+        "iterations_per_temp": 100,
+        "max_idle_shift": 15
+    },
+    "optimizer_type": "SimulatedAnnealing",
+    "description": "Simulated Annealing optimizer for batch scheduling problems. Features intelligent perturbation operators that maintain solution feasibility while exploring the search space.",
+    "compatible_problems": ["BatchScheduling"],
+    "parameters": {
+        "initial_temp": {
+            "type": "float",
+            "description": "Initial temperature for annealing process"
+        },
+        "cooling_rate": {
+            "type": "float",
+            "description": "Temperature reduction multiplier per iteration"
+        },
+        "iterations_per_temp": {
+            "type": "int",
+            "description": "Number of iterations at each temperature level"
+        },
+        "max_idle_shift": {
+            "type": "int",
+            "description": "Maximum allowed time shift for batch movement (minutes)"
+        }
+    }
+}
