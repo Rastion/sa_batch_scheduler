@@ -20,7 +20,7 @@ class SimulatedAnnealingBatchScheduler(BaseOptimizer):
     def __init__(self, 
                  initial_temp=10000,
                  cooling_rate=0.95,
-                 iterations_per_temp=100,
+                 iterations_per_temp=1000,
                  max_idle_shift=10):
         """
         Parameters:
