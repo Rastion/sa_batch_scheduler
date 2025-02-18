@@ -1,7 +1,7 @@
 {
     "entry_point": "sa_batch_optimizer:SABatchOptimizer",
     "default_params": {
-        "initial_temperature": 1000,
+        "initial_temperature": 100000,
         "final_temperature": 1,
         "cooling_rate": 0.95,
         "iterations_per_temp": 10000
