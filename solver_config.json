@@ -1,14 +1,16 @@
 {
     "entry_point": "sa_batch_optimizer:SABatchOptimizer",
     "default_params": {
-        "initial_temperature": 100000,
+        "initial_temperature": 1000,
         "final_temperature": 1,
         "cooling_rate": 0.95,
         "iterations_per_temp": 10000
     },
-    "optimizer_type": "Metaheuristic",
+    "creator": "Rastion",
+    "type": "optimizer",
+    "optimizer_name": "Simulated annealing batch scheduling optimizer",
     "description": "Simulated Annealing based batch scheduling optimizer that uses ordering and batching heuristics to generate competitive solutions.",
-    "compatible_problems": ["BatchScheduling"],
+    "compatible_problems": ["Rastion/batch_scheduling"],
     "parameters": {
         "initial_temperature": {
             "type": "float",
@@ -27,5 +29,10 @@
             "description": "Number of iterations to perform at each temperature level."
         }
     },
-    "requirements": ["random", "math", "collections", "qubots"]
+    "requirements": ["random", "math", "collections", "qubots"],
+    "keywords": [
+      "heuristic",
+      "Simulated annealing",
+      "batch scheduling"
+    ]
 }
